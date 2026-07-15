@@ -1,46 +1,52 @@
-"""Application configuration."""
+"""
+Configuration module for Reports AI
+Compatible with pydantic v1 (avoids Rust compilation on Render)
+"""
 import os
-from pydantic_settings import BaseSettings
-from functools import lru_cache
+from pydantic import BaseSettings
 
 class Settings(BaseSettings):
-    # Database
-    DATABASE_URL: str = os.environ.get("DATABASE_URL", "")
-    DATABASE_URL_ADMIN: str = os.environ.get("DATABASE_URL_ADMIN", "")
-    DB_TYPE: str = os.environ.get("DB_TYPE", "postgresql")
-    VECTOR_STORE: str = os.environ.get("VECTOR_STORE", "pgvector")
+    # Supabase Database
+    database_url: str = ""
+    database_url_admin: str = ""
+
+    # Database Config
+    db_type: str = "postgresql"
+    vector_store: str = "pgvector"
 
     # AI Model
-    MODEL_PATH: str = os.environ.get("MODEL_PATH", "./models/all-MiniLM-L6-v2.onnx")
+    model_path: str = "./models/all-MiniLM-L6-v2.onnx"
 
     # Security
-    JWT_SECRET: str = os.environ.get("JWT_SECRET", "reports-ai-super-secret-key-2026-demo")
-    INTERNAL_API_KEY: str = os.environ.get("INTERNAL_API_KEY", "internal-api-key-for-cron-jobs-2026")
+    jwt_secret: str = "reports-ai-super-secret-key-2026-demo-xyz123"
+    internal_api_key: str = "internal-api-key-for-notifications-2026"
 
     # API
-    API_BASE_URL: str = os.environ.get("API_BASE_URL", "https://reports-ai.onrender.com")
+    api_base_url: str = "https://reports-ai.onrender.com"
 
-    # Excel Source
-    EXCEL_SOURCE_PATH: str = os.environ.get("EXCEL_SOURCE_PATH", "./data/source_reports.xlsx")
+    # Excel Source File
+    excel_source_path: str = "./data/source_reports.xlsx"
 
     # Email (for Contact Dev Team)
-    SMTP_SERVER: str = os.environ.get("SMTP_SERVER", "smtp.office365.com")
-    SMTP_PORT: int = int(os.environ.get("SMTP_PORT", "587"))
-    SMTP_USER: str = os.environ.get("SMTP_USER", "")
-    SMTP_PASS: str = os.environ.get("SMTP_PASS", "")
-    DEV_TEAM_EMAIL: str = os.environ.get("DEV_TEAM_EMAIL", "cognos-dev@company.com")
-
-    # SharePoint (optional)
-    SHAREPOINT_SITE: str = os.environ.get("SHAREPOINT_SITE", "")
-    SHAREPOINT_FOLDER: str = os.environ.get("SHAREPOINT_FOLDER", "")
-    SHAREPOINT_USER: str = os.environ.get("SHAREPOINT_USER", "")
-    SHAREPOINT_PASS: str = os.environ.get("SHAREPOINT_PASS", "")
+    smtp_server: str = "smtp.office365.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_pass: str = ""
+    dev_team_email: str = ""
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
+        # Allow extra fields from .env without errors
+        extra = "ignore"
 
-@lru_cache()
+# Singleton instance
+_settings = None
+
 def get_settings():
-    return Settings()
+    global _settings
+    if _settings is None:
+        _settings = Settings()
+    return _settings
 
 settings = get_settings()
