@@ -1,46 +1,28 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { isAuthenticated } from './services/authService';
-import Login from './components/Login';
-import Navbar from './components/Navbar';
-import Dashboard from './components/Dashboard';
-import Search from './components/Search';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { isAuthenticated } from "./services/authService";
+import Navbar from "./components/Navbar";
+import Login from "./components/Login";
+import Dashboard from "./components/Dashboard";
+import Search from "./components/Search";
+import "./App.css";
 
 const PrivateRoute = ({ children }) => {
-  return isAuthenticated() ? (
-    <>
-      <Navbar />
-      <div style={{ minHeight: 'calc(100vh - 64px)', background: '#F8FAFC' }}>
-        {children}
-      </div>
-    </>
-  ) : (
-    <Navigate to="/login" replace />
-  );
+  return isAuthenticated() ? (<><Navbar />{children}</>) : (<Navigate to="/login" />);
 };
 
 function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route
-        path="/dashboard"
-        element={
-          <PrivateRoute>
-            <Dashboard />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/search"
-        element={
-          <PrivateRoute>
-            <Search />
-          </PrivateRoute>
-        }
-      />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+    <Router>
+      <div className="app-container">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/search" element={<PrivateRoute><Search /></PrivateRoute>} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
