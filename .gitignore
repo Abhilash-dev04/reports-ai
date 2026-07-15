@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# React
+frontend/node_modules/
+frontend/build/
+frontend/.env
+
+# Models (generated locally)
+models/*.onnx
+models/*.json
+
+# Data
+data/*.xlsx
+data/*.xls
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env

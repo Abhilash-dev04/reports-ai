@@ -1,0 +1,17 @@
+fastapi==0.115.0
+uvicorn[standard]==0.27.0
+python-jose[cryptography]==3.3.0
+PyJWT==2.8.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+psycopg2-binary==2.9.10
+numpy==2.2.0
+pandas==2.3.3
+openpyxl==3.1.2
+pgvector==0.2.4
+onnxruntime==1.16.3
+tokenizers==0.15.0
+requests==2.31.0
+python-dotenv==1.0.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
