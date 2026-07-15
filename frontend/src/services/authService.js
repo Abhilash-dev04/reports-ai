@@ -1,27 +1,37 @@
-import api from '../utils/axiosConfig';
+import axios from "axios";
 
-export const login = async (username, password) => {
-  const response = await api.post('/auth/login', { username, password });
-  if (response.data.access_token) {
-    localStorage.setItem('token', response.data.access_token);
-    localStorage.setItem('username', response.data.username);
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+
+const authService = {
+  login: async (username, password) => {
+    const response = await axios.post(`${API_URL}/api/auth/login`, {
+      username,
+      password
+    });
+    if (response.data.token) {
+      localStorage.setItem("token", response.data.token);
+    }
+    return response.data;
+  },
+
+  logout: () => {
+    localStorage.removeItem("token");
+  },
+
+  getCurrentUser: () => {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload;
+    } catch {
+      return null;
+    }
+  },
+
+  isAuthenticated: () => {
+    return !!localStorage.getItem("token");
   }
-  return response.data;
 };
 
-export const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('username');
-  window.location.href = '/login';
-};
-
-export const getCurrentUser = () => {
-  return {
-    token: localStorage.getItem('token'),
-    username: localStorage.getItem('username'),
-  };
-};
-
-export const isAuthenticated = () => {
-  return !!localStorage.getItem('token');
-};
+export default authService;
