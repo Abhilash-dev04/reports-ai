@@ -16,33 +16,33 @@ const Dashboard = () => {
   const [activeState, setActiveState] = useState("all");
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async (state = "all") => {
-    setLoading(true);
-    try {
-      const kpi = await dashboardService.getKPIs(state);
-      setKpiData(kpi);
-
-      const modules = await dashboardService.getModuleDistribution(state);
-      setModuleData(modules);
-
-      const freq = await dashboardService.getFrequencyDistribution(state);
-      setFrequencyData(freq);
-
-      const pkg = await dashboardService.getPackageDistribution(state);
-      setPackageData(pkg);
-
-      const ds = await dashboardService.getDataSourceDistribution(state);
-      setDataSourceData(ds);
-    } catch (err) {
-      console.error("Dashboard fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchData(activeState);
-  }, [activeState, fetchData]);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const kpi = await dashboardService.getKPIs(activeState);
+        setKpiData(kpi);
+
+        const modules = await dashboardService.getModuleDistribution(activeState);
+        setModuleData(modules);
+
+        const freq = await dashboardService.getFrequencyDistribution(activeState);
+        setFrequencyData(freq);
+
+        const pkg = await dashboardService.getPackageDistribution(activeState);
+        setPackageData(pkg);
+
+        const ds = await dashboardService.getDataSourceDistribution(activeState);
+        setDataSourceData(ds);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [activeState]);
 
   const handleStateClick = (state) => {
     setActiveState(state);
