@@ -34,4 +34,11 @@ const authService = {
   }
 };
 
+// Default export
 export default authService;
+
+// Named exports for direct import
+export const login = authService.login;
+export const logout = authService.logout;
+export const getCurrentUser = authService.getCurrentUser;
+export const isAuthenticated = authService.isAuthenticated;
