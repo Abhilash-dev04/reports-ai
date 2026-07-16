@@ -78,16 +78,24 @@ const Login = () => {
         </form>
 
         <div className="login-footer">
-          <p>
-            <span onClick={() => navigate('/forgot-password')}>
+          <p className="forgot-password">
+            <button 
+              type="button" 
+              className="link-button"
+              onClick={() => navigate('/forgot-password')}
+            >
               Forgot Password?
-            </span>
+            </button>
           </p>
-          <p>
+          <p className="signup-prompt">
             Don't have an account?{' '}
-            <span onClick={() => navigate('/signup')}>
+            <button 
+              type="button" 
+              className="link-button primary"
+              onClick={() => navigate('/signup')}
+            >
               Create Account
-            </span>
+            </button>
           </p>
         </div>
       </div>
