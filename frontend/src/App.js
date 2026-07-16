@@ -3,12 +3,20 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { isAuthenticated } from "./services/authService";
 import Navbar from "./components/Navbar";
 import Login from "./components/Login";
+import ForgotPassword from "./components/ForgotPassword";
 import Dashboard from "./components/Dashboard";
 import Search from "./components/Search";
 import "./App.css";
 
 const PrivateRoute = ({ children }) => {
-  return isAuthenticated() ? (<><Navbar />{children}</>) : (<Navigate to="/login" />);
+  return isAuthenticated() ? (
+    <>
+      <Navbar />
+      {children}
+    </>
+  ) : (
+    <Navigate to="/login" />
+  );
 };
 
 function App() {
@@ -17,9 +25,31 @@ function App() {
       <div className="app-container">
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/search" element={<PrivateRoute><Search /></PrivateRoute>} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/search"
+            element={
+              <PrivateRoute>
+                <Search />
+              </PrivateRoute>
+            }
+          />
         </Routes>
       </div>
     </Router>

@@ -194,17 +194,112 @@ async def contact_dev(request: Request):
 async def login(request: Request):
     try:
         data = await request.json()
-        username = data.get("username")
+        username = data.get("username", "").strip()
+        password = data.get("password", "").strip()
+
+        if not username or not password:
+            raise HTTPException(status_code=401, detail="Username and password required")
+            
+@app.post("/api/auth/reset-password")
+async def reset_password(request: Request):
+    try:
+        data = await request.json()
+        username = data.get("username", "").strip()
+        new_password = data.get("new_password", "").strip()
+
+        if not username or not new_password:
+            raise HTTPException(status_code=400, detail="Username and new password required")
+
+        if len(new_password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+        # Connect to database
+        from backend.database.connection import get_db
+        import psycopg
+        db = get_db()
+        cursor = db.cursor(row_factory=psycopg.rows.dict_row)
+
+        # Check if user exists
+        cursor.execute("SELECT user_id FROM users WHERE username = %s", (username,))
+        user = cursor.fetchone()
+
+        if not user:
+            cursor.close()
+            db.close()
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Hash new password
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        password_hash = pwd_context.hash(new_password)
+
+        # Update password
+        cursor.execute(
+            "UPDATE users SET password_hash = %s WHERE username = %s",
+            (password_hash, username)
+        )
+
+        db.commit()
+        cursor.close()
+        db.close()
+
+        return {"status": "success", "message": "Password updated successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Reset password error: {e}")
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+        # Connect to database and verify user
+        from backend.database.connection import get_db
+        import psycopg
+        db = get_db()
+        cursor = db.cursor(row_factory=psycopg.rows.dict_row)
+
+        # Get user from database
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+        user = cursor.fetchone()
+        cursor.close()
+        db.close()
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+
+        # Verify password using bcrypt
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+        if not pwd_context.verify(password, user["password_hash"]):
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+
+        # Generate JWT token
         import jwt
         from datetime import datetime, timedelta
+
+        jwt_secret = os.environ.get("JWT_SECRET", "reports-ai-super-secret-key-2026-demo-xyz123")
+
         token = jwt.encode(
-            {"sub": username, "exp": datetime.utcnow() + timedelta(days=1)},
-            os.environ.get("JWT_SECRET", "reports-ai-super-secret-key-2026-demo-xyz123"),
+            {
+                "sub": username,
+                "role": user.get("role", "user"),
+                "exp": datetime.utcnow() + timedelta(days=1)
+            },
+            jwt_secret,
             algorithm="HS256"
         )
-        return {"token": token, "username": username}
+
+        return {
+            "token": token,
+            "username": username,
+            "role": user.get("role", "user")
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        print(f"Login error: {e}")
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 # Serve React frontend
 build_dir = Path(__file__).parent.parent / "frontend" / "build"

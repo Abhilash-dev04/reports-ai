@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { LogIn } from "lucide-react";
 import authService from "../services/authService";
 import "./Login.css";
@@ -15,6 +15,7 @@ const Login = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
       await authService.login(username, password);
       navigate("/dashboard");
@@ -34,16 +35,32 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label>Username</label>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter username" required />
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter username"
+              required
+            />
           </div>
           <div className="form-group">
             <label>Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" required />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
+              required
+            />
           </div>
           <button type="submit" disabled={loading}>
-            <LogIn size={16} /> {loading ? "Signing in..." : "Sign In"}
+            <LogIn size={16} />
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+        <div className="forgot-password-link">
+          <Link to="/forgot-password">Forgot Password?</Link>
+        </div>
       </div>
     </div>
   );
