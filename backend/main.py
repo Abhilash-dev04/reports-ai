@@ -1,5 +1,6 @@
 """
 Reports AI - FastAPI Backend
+Serves both API and React frontend static files
 """
 import os
 import sys
@@ -9,6 +10,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, HTTPException, Depends, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse
 from contextlib import asynccontextmanager
 
 from backend.database.connection import init_db
@@ -40,12 +43,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# API Routes
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "version": "1.0.0"}
 
-@app.get("/")
-async def root():
+@app.get("/api")
+async def api_root():
     return {"message": "Reports AI API", "docs": "/docs"}
 
 # Dashboard endpoints
@@ -53,8 +57,9 @@ async def root():
 async def get_kpis(state: str = Query("all")):
     try:
         from backend.database.connection import get_db
+        import psycopg
         db = get_db()
-        cursor = db.cursor(row_factory=dict_row)
+        cursor = db.cursor(row_factory=psycopg.rows.dict_row)
         where_clause = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT COUNT(*) as total_reports, COUNT(DISTINCT functional_area) as total_modules, COUNT(DISTINCT package_name) as total_packages, COUNT(DISTINCT data_source) as data_sources FROM reports {where_clause}", params)
@@ -69,8 +74,9 @@ async def get_kpis(state: str = Query("all")):
 async def get_modules(state: str = Query("all")):
     try:
         from backend.database.connection import get_db
+        import psycopg
         db = get_db()
-        cursor = db.cursor(row_factory=dict_row)
+        cursor = db.cursor(row_factory=psycopg.rows.dict_row)
         where = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT functional_area as name, COUNT(*) as value FROM reports {where} GROUP BY functional_area", params)
@@ -84,8 +90,9 @@ async def get_modules(state: str = Query("all")):
 async def get_frequency(state: str = Query("all")):
     try:
         from backend.database.connection import get_db
+        import psycopg
         db = get_db()
-        cursor = db.cursor(row_factory=dict_row)
+        cursor = db.cursor(row_factory=psycopg.rows.dict_row)
         where = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT COALESCE(frequency, 'Unknown') as name, COUNT(*) as value FROM reports {where} GROUP BY frequency", params)
@@ -99,8 +106,9 @@ async def get_frequency(state: str = Query("all")):
 async def get_packages(state: str = Query("all")):
     try:
         from backend.database.connection import get_db
+        import psycopg
         db = get_db()
-        cursor = db.cursor(row_factory=dict_row)
+        cursor = db.cursor(row_factory=psycopg.rows.dict_row)
         where = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT package_name as name, COUNT(*) as value FROM reports {where} GROUP BY package_name", params)
@@ -114,8 +122,9 @@ async def get_packages(state: str = Query("all")):
 async def get_datasource(state: str = Query("all")):
     try:
         from backend.database.connection import get_db
+        import psycopg
         db = get_db()
-        cursor = db.cursor(row_factory=dict_row)
+        cursor = db.cursor(row_factory=psycopg.rows.dict_row)
         where = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT data_source as name, COUNT(*) as value FROM reports {where} GROUP BY data_source", params)
@@ -130,8 +139,9 @@ async def get_datasource(state: str = Query("all")):
 async def search_reports(q: str = Query(...), type: str = Query("traditional")):
     try:
         from backend.database.connection import get_db
+        import psycopg
         db = get_db()
-        cursor = db.cursor(row_factory=dict_row)
+        cursor = db.cursor(row_factory=psycopg.rows.dict_row)
         cursor.execute("""
             SELECT * FROM reports 
             WHERE report_name ILIKE %s OR report_id ILIKE %s OR functional_area ILIKE %s
@@ -195,6 +205,35 @@ async def login(request: Request):
         return {"token": token, "username": username}
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+# Serve React frontend
+build_dir = Path(__file__).parent.parent / "frontend" / "build"
+if build_dir.exists():
+    @app.get("/", response_class=HTMLResponse)
+    async def serve_index():
+        index_file = build_dir / "index.html"
+        if index_file.exists():
+            with open(index_file, "r") as f:
+                return f.read()
+        return {"message": "Reports AI API", "docs": "/docs"}
+
+    # Mount static files
+    app.mount("/static", StaticFiles(directory=str(build_dir / "static")), name="static")
+
+    # Catch-all for React Router
+    @app.get("/{path:path}")
+    async def catch_all(path: str):
+        if path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        index_file = build_dir / "index.html"
+        if index_file.exists():
+            with open(index_file, "r") as f:
+                return HTMLResponse(content=f.read())
+        return {"message": "Reports AI API", "docs": "/docs"}
+else:
+    @app.get("/")
+    async def root():
+        return {"message": "Reports AI API", "docs": "/docs", "note": "Frontend not built. Run 'cd frontend && npm run build'"}
 
 if __name__ == "__main__":
     import uvicorn
