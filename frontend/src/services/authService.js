@@ -16,7 +16,6 @@ const authService = {
   },
 
   signUp: async (userData) => {
-    // Only sends username and password — backend sets role='user' by default
     const response = await axios.post(`${API_URL}/api/auth/signup`, {
       username: userData.username,
       password: userData.password
@@ -43,4 +42,13 @@ const authService = {
   }
 };
 
+// Default export (for authService.logout style)
 export default authService;
+
+// Named exports (for import { logout } style)
+export const login = authService.login;
+export const signUp = authService.signUp;
+export const logout = authService.logout;
+export const isAuthenticated = authService.isAuthenticated;
+export const getCurrentUser = authService.getCurrentUser;
+export const getToken = authService.getToken;
