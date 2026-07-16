@@ -5,7 +5,7 @@ import SignUp from './components/SignUp';
 import ForgotPassword from './components/ForgotPassword';
 import Dashboard from './components/Dashboard';
 import Search from './components/Search';
-import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import authService from './services/authService';
 import './App.css';
 
@@ -14,7 +14,7 @@ export const useAppState = () => useContext(AppContext);
 
 const PrivateRoute = ({ children }) => {
   return authService.isAuthenticated() ? (
-    <><Navbar />{children}</>
+    <><Sidebar />{children}</>
   ) : (<Navigate to="/login" replace />);
 };
 

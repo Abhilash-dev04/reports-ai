@@ -16,6 +16,11 @@ const searchService = {
   addReport: async (reportData) => {
     const response = await axios.post(`${API_URL}/api/reports`, reportData);
     return response.data;
+  },
+  contactDev: async (message) => {
+    const response = await axios.post(`${API_URL}/api/contact`, { message });
+    return response.data;
   }
 };
+
 export default searchService;
