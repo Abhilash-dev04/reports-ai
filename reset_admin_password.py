@@ -36,27 +36,27 @@ def reset_admin_password():
                 "UPDATE users SET password_hash = %s WHERE username = 'admin'",
                 (password_hash,)
             )
-            print(f"✅ Admin password updated successfully!")
+            print("Admin password updated successfully!")
         else:
             # Create admin user if not exists
             cursor.execute(
                 "INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)",
                 ("admin", password_hash, "admin")
             )
-            print(f"✅ Admin user created successfully!")
+            print("Admin user created successfully!")
 
         db.commit()
         cursor.close()
         db.close()
 
-        print(f"
-New admin password: {NEW_PASSWORD}")
+        print("")
+        print("New admin password: " + NEW_PASSWORD)
         print("You can now login with:")
-        print(f"  Username: admin")
-        print(f"  Password: {NEW_PASSWORD}")
+        print("  Username: admin")
+        print("  Password: " + NEW_PASSWORD)
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print("Error: " + str(e))
 
 if __name__ == "__main__":
     # Try to load .env file
