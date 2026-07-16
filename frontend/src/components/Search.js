@@ -27,7 +27,7 @@ const Search = () => {
       const data = await searchService.search(query, searchType, selectedState);
       setResults(data);
     } catch (err) {
-      console.error('Search error:', err);
+      // Error handled silently
       setResults([]);
     } finally {
       setLoading(false);

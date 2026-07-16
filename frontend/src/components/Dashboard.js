@@ -14,31 +14,32 @@ const Dashboard = () => {
   const [recentReports, setRecentReports] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchDashboardData(); }, [selectedState]);
-
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      const [kpiData, moduleData, freqData, pkgData, dsData, recentData] = await Promise.all([
-        dashboardService.getKPIs(selectedState),
-        dashboardService.getModules(selectedState),
-        dashboardService.getFrequency(selectedState),
-        dashboardService.getPackages(selectedState),
-        dashboardService.getDataSource(selectedState),
-        dashboardService.getRecentReports(selectedState, 8)
-      ]);
-      setKpis(kpiData);
-      setModules(moduleData);
-      setFrequency(freqData);
-      setPackages(pkgData);
-      setDatasource(dsData);
-      setRecentReports(recentData);
-    } catch (err) {
-      console.error('Dashboard error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        const [kpiData, moduleData, freqData, pkgData, dsData, recentData] = await Promise.all([
+          dashboardService.getKPIs(selectedState),
+          dashboardService.getModules(selectedState),
+          dashboardService.getFrequency(selectedState),
+          dashboardService.getPackages(selectedState),
+          dashboardService.getDataSource(selectedState),
+          dashboardService.getRecentReports(selectedState, 8)
+        ]);
+        setKpis(kpiData);
+        setModules(moduleData);
+        setFrequency(freqData);
+        setPackages(pkgData);
+        setDatasource(dsData);
+        setRecentReports(recentData);
+      } catch (err) {
+        // Error handled silently
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, [selectedState]);
 
   const kpiCards = [
     { label: 'Total Reports', value: kpis.total_reports, icon: FileText, color: 'accent' },
