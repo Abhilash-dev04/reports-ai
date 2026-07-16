@@ -1,6 +1,5 @@
 """
 Reports AI - FastAPI Backend
-Serves both API and React frontend static files
 """
 import os
 import sys
@@ -10,8 +9,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, HTTPException, Depends, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 
 from backend.database.connection import init_db
@@ -35,7 +32,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -44,7 +40,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# API Routes
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "version": "1.0.0"}
@@ -58,13 +53,12 @@ async def root():
 async def get_kpis(state: str = Query("all")):
     try:
         from backend.database.connection import get_db
-        import psycopg2.extras
         db = get_db()
-        cursor = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = db.cursor(row_factory=dict_row)
         where_clause = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT COUNT(*) as total_reports, COUNT(DISTINCT functional_area) as total_modules, COUNT(DISTINCT package_name) as total_packages, COUNT(DISTINCT data_source) as data_sources FROM reports {where_clause}", params)
-        result = dict(cursor.fetchone())
+        result = cursor.fetchone()
         cursor.close(); db.close()
         return result
     except Exception as e:
@@ -75,13 +69,12 @@ async def get_kpis(state: str = Query("all")):
 async def get_modules(state: str = Query("all")):
     try:
         from backend.database.connection import get_db
-        import psycopg2.extras
         db = get_db()
-        cursor = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = db.cursor(row_factory=dict_row)
         where = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT functional_area as name, COUNT(*) as value FROM reports {where} GROUP BY functional_area", params)
-        result = [dict(row) for row in cursor.fetchall()]
+        result = cursor.fetchall()
         cursor.close(); db.close()
         return result or [{"name": "PROVIDER", "value": 48}]
     except Exception as e:
@@ -91,13 +84,12 @@ async def get_modules(state: str = Query("all")):
 async def get_frequency(state: str = Query("all")):
     try:
         from backend.database.connection import get_db
-        import psycopg2.extras
         db = get_db()
-        cursor = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = db.cursor(row_factory=dict_row)
         where = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT COALESCE(frequency, 'Unknown') as name, COUNT(*) as value FROM reports {where} GROUP BY frequency", params)
-        result = [dict(row) for row in cursor.fetchall()]
+        result = cursor.fetchall()
         cursor.close(); db.close()
         return result or [{"name": "Unknown", "value": 48}]
     except Exception as e:
@@ -107,13 +99,12 @@ async def get_frequency(state: str = Query("all")):
 async def get_packages(state: str = Query("all")):
     try:
         from backend.database.connection import get_db
-        import psycopg2.extras
         db = get_db()
-        cursor = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = db.cursor(row_factory=dict_row)
         where = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT package_name as name, COUNT(*) as value FROM reports {where} GROUP BY package_name", params)
-        result = [dict(row) for row in cursor.fetchall()]
+        result = cursor.fetchall()
         cursor.close(); db.close()
         return result
     except Exception as e:
@@ -123,13 +114,12 @@ async def get_packages(state: str = Query("all")):
 async def get_datasource(state: str = Query("all")):
     try:
         from backend.database.connection import get_db
-        import psycopg2.extras
         db = get_db()
-        cursor = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = db.cursor(row_factory=dict_row)
         where = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT data_source as name, COUNT(*) as value FROM reports {where} GROUP BY data_source", params)
-        result = [dict(row) for row in cursor.fetchall()]
+        result = cursor.fetchall()
         cursor.close(); db.close()
         return result or [{"name": "MMIS", "value": 48}]
     except Exception as e:
@@ -140,15 +130,14 @@ async def get_datasource(state: str = Query("all")):
 async def search_reports(q: str = Query(...), type: str = Query("traditional")):
     try:
         from backend.database.connection import get_db
-        import psycopg2.extras
         db = get_db()
-        cursor = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = db.cursor(row_factory=dict_row)
         cursor.execute("""
             SELECT * FROM reports 
             WHERE report_name ILIKE %s OR report_id ILIKE %s OR functional_area ILIKE %s
             LIMIT 20
         """, (f"%{q}%", f"%{q}%", f"%{q}%"))
-        result = [dict(row) for row in cursor.fetchall()]
+        result = cursor.fetchall()
         cursor.close(); db.close()
         return result
     except Exception as e:
@@ -206,11 +195,6 @@ async def login(request: Request):
         return {"token": token, "username": username}
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-
-# Serve React frontend static files
-build_dir = Path(__file__).parent.parent / "frontend" / "build"
-if build_dir.exists():
-    app.mount("/", StaticFiles(directory=str(build_dir), html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn

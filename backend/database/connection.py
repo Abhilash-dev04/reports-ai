@@ -1,16 +1,16 @@
 """
-Database connection module
+Database connection module using psycopg v3
 """
 import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import psycopg
+from psycopg.rows import dict_row
 
 def get_db(admin=False):
     """Get database connection"""
     conn_str = os.environ.get("DATABASE_URL_ADMIN" if admin else "DATABASE_URL")
     if not conn_str:
         raise ValueError("Database URL not configured")
-    return psycopg2.connect(conn_str)
+    return psycopg.connect(conn_str)
 
 def init_db():
     """Initialize database tables"""
