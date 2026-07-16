@@ -303,6 +303,73 @@ async def reset_password(request: Request):
         print(f"Reset password error: {e}")
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
+# SIGN UP ENDPOINT (NEW)
+@app.post("/api/auth/signup")
+async def signup(request: Request):
+    try:
+        data = await request.json()
+        username = data.get("username", "").strip()
+        password = data.get("password", "").strip()
+        # No role from frontend — always 'user' for new signups
+        role = "user"
+
+        # Validation
+        if not username or not password:
+            raise HTTPException(status_code=400, detail="Username and password are required")
+        
+        if len(username) < 3:
+            raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+        
+        if len(password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+        # Connect to database
+        from backend.database.connection import get_db
+        import psycopg
+        db = get_db()
+        cursor = db.cursor(row_factory=psycopg.rows.dict_row)
+
+        # Check if username already exists
+        cursor.execute("SELECT user_id FROM users WHERE username = %s", (username,))
+        existing_user = cursor.fetchone()
+
+        if existing_user:
+            cursor.close()
+            db.close()
+            raise HTTPException(status_code=409, detail="Username already exists")
+
+        # Hash password
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        password_hash = pwd_context.hash(password)
+
+        # Insert new user with role='user'
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s) RETURNING user_id, username, role",
+            (username, password_hash, role)
+        )
+        
+        new_user = cursor.fetchone()
+        db.commit()
+        cursor.close()
+        db.close()
+
+        return {
+            "status": "success",
+            "message": "Account created successfully",
+            "user": {
+                "user_id": new_user["user_id"],
+                "username": new_user["username"],
+                "role": new_user["role"]
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Signup error: {e}")
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
 # Serve React frontend
 build_dir = Path(__file__).parent.parent / "frontend" / "build"
 if build_dir.exists():
