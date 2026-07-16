@@ -3,8 +3,10 @@ services:
     name: reports-ai
     runtime: python
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "cd /opt/render/project/src && PYTHONPATH=/opt/render/project/src python backend/main.py"
+    buildCommand: |
+      pip install -r requirements.txt
+      cd frontend && npm install && npm run build
+    startCommand: cd /opt/render/project/src && PYTHONPATH=/opt/render/project/src python backend/main.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11
@@ -20,3 +22,5 @@ services:
         value: ./models/all-MiniLM-L6-v2.onnx
       - key: EXCEL_SOURCE_PATH
         value: ./data/source_reports.xlsx
+      - key: NODE_VERSION
+        value: 18

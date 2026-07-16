@@ -1,26 +1,24 @@
 """
 Reports AI - FastAPI Backend
+Serves both API and React frontend static files
 """
 import os
 import sys
 from pathlib import Path
 
-# Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, HTTPException, Depends, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 
-from backend.config import settings
 from backend.database.connection import init_db
 from backend.embedding.model import encode_text
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup and shutdown events"""
-    # Startup
     print("Starting up Reports AI...")
     try:
         init_db()
@@ -28,7 +26,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Database init warning: {e}")
     yield
-    # Shutdown
     print("Shutting down Reports AI...")
 
 app = FastAPI(
@@ -38,7 +35,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS - allow all origins for demo
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -47,6 +44,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# API Routes
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "version": "1.0.0"}
@@ -58,29 +56,16 @@ async def root():
 # Dashboard endpoints
 @app.get("/api/dashboard/kpis")
 async def get_kpis(state: str = Query("all")):
-    """Get KPI data for dashboard"""
     try:
         from backend.database.connection import get_db
         import psycopg2.extras
         db = get_db()
         cursor = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
         where_clause = "WHERE state = %s" if state != "all" else "WHERE 1=1"
         params = (state,) if state != "all" else ()
-
-        cursor.execute(f"""
-            SELECT 
-                COUNT(*) as total_reports,
-                COUNT(DISTINCT functional_area) as total_modules,
-                COUNT(DISTINCT package_name) as total_packages,
-                COUNT(DISTINCT data_source) as data_sources
-            FROM reports
-            {where_clause}
-        """, params)
-
+        cursor.execute(f"SELECT COUNT(*) as total_reports, COUNT(DISTINCT functional_area) as total_modules, COUNT(DISTINCT package_name) as total_packages, COUNT(DISTINCT data_source) as data_sources FROM reports {where_clause}", params)
         result = dict(cursor.fetchone())
-        cursor.close()
-        db.close()
+        cursor.close(); db.close()
         return result
     except Exception as e:
         print(f"KPI error: {e}")
@@ -97,8 +82,7 @@ async def get_modules(state: str = Query("all")):
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT functional_area as name, COUNT(*) as value FROM reports {where} GROUP BY functional_area", params)
         result = [dict(row) for row in cursor.fetchall()]
-        cursor.close()
-        db.close()
+        cursor.close(); db.close()
         return result or [{"name": "PROVIDER", "value": 48}]
     except Exception as e:
         return [{"name": "PROVIDER", "value": 48}]
@@ -114,8 +98,7 @@ async def get_frequency(state: str = Query("all")):
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT COALESCE(frequency, 'Unknown') as name, COUNT(*) as value FROM reports {where} GROUP BY frequency", params)
         result = [dict(row) for row in cursor.fetchall()]
-        cursor.close()
-        db.close()
+        cursor.close(); db.close()
         return result or [{"name": "Unknown", "value": 48}]
     except Exception as e:
         return [{"name": "Unknown", "value": 48}]
@@ -131,8 +114,7 @@ async def get_packages(state: str = Query("all")):
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT package_name as name, COUNT(*) as value FROM reports {where} GROUP BY package_name", params)
         result = [dict(row) for row in cursor.fetchall()]
-        cursor.close()
-        db.close()
+        cursor.close(); db.close()
         return result
     except Exception as e:
         return []
@@ -148,8 +130,7 @@ async def get_datasource(state: str = Query("all")):
         params = (state,) if state != "all" else ()
         cursor.execute(f"SELECT data_source as name, COUNT(*) as value FROM reports {where} GROUP BY data_source", params)
         result = [dict(row) for row in cursor.fetchall()]
-        cursor.close()
-        db.close()
+        cursor.close(); db.close()
         return result or [{"name": "MMIS", "value": 48}]
     except Exception as e:
         return [{"name": "MMIS", "value": 48}]
@@ -162,26 +143,13 @@ async def search_reports(q: str = Query(...), type: str = Query("traditional")):
         import psycopg2.extras
         db = get_db()
         cursor = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-        if type == "nlp":
-            # Semantic search using embeddings
-            query_embedding = encode_text(q)
-            # For now, fallback to text search
-            cursor.execute("""
-                SELECT * FROM reports 
-                WHERE report_name ILIKE %s OR report_id ILIKE %s OR functional_area ILIKE %s
-                LIMIT 20
-            """, (f"%{q}%", f"%{q}%", f"%{q}%"))
-        else:
-            cursor.execute("""
-                SELECT * FROM reports 
-                WHERE report_name ILIKE %s OR report_id ILIKE %s OR functional_area ILIKE %s
-                LIMIT 20
-            """, (f"%{q}%", f"%{q}%", f"%{q}%"))
-
+        cursor.execute("""
+            SELECT * FROM reports 
+            WHERE report_name ILIKE %s OR report_id ILIKE %s OR functional_area ILIKE %s
+            LIMIT 20
+        """, (f"%{q}%", f"%{q}%", f"%{q}%"))
         result = [dict(row) for row in cursor.fetchall()]
-        cursor.close()
-        db.close()
+        cursor.close(); db.close()
         return result
     except Exception as e:
         print(f"Search error: {e}")
@@ -208,8 +176,7 @@ async def add_report(request: Request):
             data.get("state", "NH"), data.get("data_source", "MMIS")
         ))
         db.commit()
-        cursor.close()
-        db.close()
+        cursor.close(); db.close()
         return {"status": "success", "message": "Report added"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -219,7 +186,6 @@ async def contact_dev(request: Request):
     try:
         data = await request.json()
         message = data.get("message", "")
-        # For demo, just log it. In production, send email.
         print(f"Dev team message: {message}")
         return {"status": "success", "message": "Message sent to dev team"}
     except Exception as e:
@@ -230,18 +196,21 @@ async def login(request: Request):
     try:
         data = await request.json()
         username = data.get("username")
-        password = data.get("password")
-        # Demo auth - accept any credentials
         import jwt
         from datetime import datetime, timedelta
         token = jwt.encode(
             {"sub": username, "exp": datetime.utcnow() + timedelta(days=1)},
-            settings.jwt_secret,
+            os.environ.get("JWT_SECRET", "reports-ai-super-secret-key-2026-demo-xyz123"),
             algorithm="HS256"
         )
         return {"token": token, "username": username}
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+# Serve React frontend static files
+build_dir = Path(__file__).parent.parent / "frontend" / "build"
+if build_dir.exists():
+    app.mount("/", StaticFiles(directory=str(build_dir), html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
