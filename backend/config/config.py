@@ -1,11 +1,14 @@
 """
 Configuration module for Reports AI
-Compatible with pydantic v1 (avoids Rust compilation on Render)
+Compatible with pydantic v2
 """
 import os
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 class Settings(BaseSettings):
+    model_config = ConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
     # Supabase Database
     database_url: str = ""
     database_url_admin: str = ""
@@ -33,12 +36,6 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_pass: str = ""
     dev_team_email: str = ""
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        # Allow extra fields from .env without errors
-        extra = "ignore"
 
 # Singleton instance
 _settings = None

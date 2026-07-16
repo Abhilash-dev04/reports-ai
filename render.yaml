@@ -3,36 +3,20 @@ services:
     name: reports-ai
     runtime: python
     plan: free
-    buildCommand: "cd frontend && npm install && CI=false npm run build && cd .. && pip install -r requirements.txt && python scripts/download_model.py"
-    startCommand: "cd /opt/render/project/src && PYTHONPATH=/opt/render/project/src uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "cd /opt/render/project/src && PYTHONPATH=/opt/render/project/src python backend/main.py"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11
       - key: DATABASE_URL
         sync: false
       - key: DATABASE_URL_ADMIN
         sync: false
-      - key: DB_TYPE
-        value: postgresql
-      - key: VECTOR_STORE
-        value: pgvector
+      - key: JWT_SECRET
+        sync: false
+      - key: INTERNAL_API_KEY
+        sync: false
       - key: MODEL_PATH
         value: ./models/all-MiniLM-L6-v2.onnx
-      - key: JWT_SECRET
-        generateValue: true
-      - key: INTERNAL_API_KEY
-        generateValue: true
-      - key: API_BASE_URL
-        value: https://reports-ai.onrender.com
       - key: EXCEL_SOURCE_PATH
         value: ./data/source_reports.xlsx
-      - key: SMTP_SERVER
-        sync: false
-      - key: SMTP_PORT
-        value: "587"
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
-      - key: DEV_TEAM_EMAIL
-        sync: false
