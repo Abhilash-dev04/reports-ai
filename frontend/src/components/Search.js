@@ -1,237 +1,235 @@
-import React, { useState } from "react";
-import {
-  Search as SearchIcon,
-  Database,
-  FileSpreadsheet,
-  AlertCircle,
-  Plus,
-  Mail,
-  X
-} from "lucide-react";
-import searchService from "../services/searchService";
-import "./Search.css";
+import React, { useState } from 'react';
+import { useAppState } from '../App';
+import { Search as SearchIcon, X, Plus, ArrowRight, Sparkles, FileText } from 'lucide-react';
+import searchService from '../services/searchService';
+import './Search.css';
 
 const Search = () => {
-  const [activeTab, setActiveTab] = useState("traditional");
-  const [query, setQuery] = useState("");
+  const { selectedState } = useAppState();
+  const [query, setQuery] = useState('');
+  const [searchType, setSearchType] = useState('traditional');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showContactForm, setShowContactForm] = useState(false);
-  const [contactMessage, setContactMessage] = useState("");
+  const [searched, setSearched] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [newReport, setNewReport] = useState({
-    report_id: "",
-    report_name: "",
-    functional_area: "",
-    package_name: "",
-    frequency: "",
-    report_type: "",
-    state: "NH",
-    data_source: "MMIS"
+    report_id: '', report_name: '', functional_area: '', package_name: '',
+    frequency: 'Daily', report_type: 'Standard', state: 'NH', data_source: 'MMIS'
   });
+  const [addError, setAddError] = useState('');
+  const [addSuccess, setAddSuccess] = useState('');
 
   const handleSearch = async () => {
     if (!query.trim()) return;
     setLoading(true);
+    setSearched(true);
     try {
-      const data = await searchService.search(query, activeTab);
+      const data = await searchService.search(query, searchType, selectedState);
       setResults(data);
     } catch (err) {
-      console.error("Search error:", err);
+      console.error('Search error:', err);
       setResults([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') handleSearch();
+  };
+
   const handleAddReport = async (e) => {
     e.preventDefault();
+    setAddError('');
+    setAddSuccess('');
+    if (!newReport.report_name) {
+      setAddError('Report name is required');
+      return;
+    }
     try {
       await searchService.addReport(newReport);
-      setShowAddForm(false);
+      setAddSuccess('Report added successfully!');
       setNewReport({
-        report_id: "",
-        report_name: "",
-        functional_area: "",
-        package_name: "",
-        frequency: "",
-        report_type: "",
-        state: "NH",
-        data_source: "MMIS"
+        report_id: '', report_name: '', functional_area: '', package_name: '',
+        frequency: 'Daily', report_type: 'Standard', state: 'NH', data_source: 'MMIS'
       });
-      alert("Report added successfully!");
+      setTimeout(() => {
+        setShowAddModal(false);
+        setAddSuccess('');
+      }, 1500);
     } catch (err) {
-      console.error("Add report error:", err);
-      alert("Failed to add report");
+      setAddError(err.response?.data?.detail || 'Failed to add report');
     }
   };
 
-  const handleContactDev = async (e) => {
-    e.preventDefault();
-    try {
-      await searchService.contactDevTeam(contactMessage);
-      setShowContactForm(false);
-      setContactMessage("");
-      alert("Message sent to dev team!");
-    } catch (err) {
-      console.error("Contact dev error:", err);
-      alert("Failed to send message");
-    }
+  const getStateLabel = () => {
+    if (selectedState === 'all') return 'All States';
+    if (selectedState === 'AK') return 'Alaska';
+    if (selectedState === 'NH') return 'New Hampshire';
+    if (selectedState === 'ND') return 'North Dakota';
+    return selectedState;
   };
 
   return (
-    <div className="search-container">
-      <h1 className="search-title">Search Reports</h1>
+    <div className="search-page">
+      <div className="search-header">
+        <h1>Search Reports</h1>
+        <p>Search across <span className="state-highlight">{getStateLabel()}</span></p>
+      </div>
 
-      <div className="search-tabs">
-        <button
-          className={`search-tab ${activeTab === "traditional" ? "active" : ""}`}
-          onClick={() => setActiveTab("traditional")}
-        >
-          <Database size={16} /> Traditional
+      <div className="tab-switcher">
+        <button className={`tab-btn ${searchType === 'traditional' ? 'active' : ''}`}
+          onClick={() => setSearchType('traditional')}>
+          <FileText size={16} />Traditional Search
         </button>
-        <button
-          className={`search-tab ${activeTab === "nlp" ? "active" : ""}`}
-          onClick={() => setActiveTab("nlp")}
-        >
-          <SearchIcon size={16} /> NLP
-        </button>
-        <button
-          className={`search-tab ${activeTab === "results" ? "active" : ""}`}
-          onClick={() => setActiveTab("results")}
-        >
-          <FileSpreadsheet size={16} /> Results
+        <button className={`tab-btn ${searchType === 'nlp' ? 'active' : ''}`}
+          onClick={() => setSearchType('nlp')}>
+          <Sparkles size={16} />NLP Search
         </button>
       </div>
 
-      <div className="search-box">
-        <input
-          type="text"
-          placeholder={activeTab === "nlp" ? "e.g., show me daily claims" : "Search by report name, ID, or module..."}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-        />
-        <button onClick={handleSearch} disabled={loading}>
-          {loading ? "Searching..." : <><SearchIcon size={16} /> Search</>}
-        </button>
-      </div>
-
-      {results.length === 0 && !loading && query && (
-        <div className="no-results">
-          <AlertCircle size={48} />
-          <h3>Data Not Available</h3>
-          <p>No reports found matching your search.</p>
-          <div className="no-results-actions">
-            <button onClick={() => setShowAddForm(true)}>
-              <Plus size={16} /> Add Missing Data
+      <div className="search-input-container">
+        <div className="search-input-wrapper">
+          <SearchIcon size={20} className="search-icon" />
+          <input
+            type="text"
+            className="search-input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={searchType === 'nlp' ? "Ask in natural language..." : "Search by report name, ID, or module..."}
+          />
+          {query && (
+            <button className="clear-btn" onClick={() => { setQuery(''); setResults([]); setSearched(false); }}>
+              <X size={16} />
             </button>
-            <button onClick={() => setShowContactForm(true)}>
-              <Mail size={16} /> Contact Cognos Dev Team
+          )}
+        </div>
+        <button className="search-btn" onClick={handleSearch} disabled={loading || !query.trim()}>
+          {loading ? 'Searching...' : 'Search'}
+        </button>
+      </div>
+
+      {!searched && (
+        <div className="empty-state">
+          <div className="empty-icon">?</div>
+          <h3>Start Searching</h3>
+          <p>Enter a query to find reports across all states</p>
+          <div className="empty-actions">
+            <button className="action-btn primary" onClick={() => setShowAddModal(true)}>
+              <Plus size={16} />Add New Report
+            </button>
+            <button className="action-btn secondary" onClick={() => { setQuery(''); handleSearch(); }}>
+              <FileText size={16} />View All
             </button>
           </div>
         </div>
       )}
 
-      {results.length > 0 && (
-        <div className="results-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Report ID</th>
-                <th>Report Name</th>
-                <th>Module</th>
-                <th>Package</th>
-                <th>Frequency</th>
-                <th>State</th>
-                <th>Data Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((report) => (
-                <tr key={report.report_id}>
-                  <td>{report.report_id}</td>
-                  <td>{report.report_name}</td>
-                  <td>{report.functional_area}</td>
-                  <td>{report.package_name}</td>
-                  <td>{report.frequency}</td>
-                  <td>{report.state}</td>
-                  <td>{report.data_source}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {searched && results.length === 0 && !loading && (
+        <div className="empty-state">
+          <div className="empty-icon" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>!</div>
+          <h3>No Results Found</h3>
+          <p>No reports match your search criteria</p>
+          <div className="empty-actions">
+            <button className="action-btn primary" onClick={() => setShowAddModal(true)}>
+              <Plus size={16} />Add New Report
+            </button>
+          </div>
         </div>
       )}
 
-      {showAddForm && (
-        <div className="modal-overlay">
-          <div className="modal">
+      {searched && results.length > 0 && (
+        <>
+          <div className="results-header">{results.length} result{results.length !== 1 ? 's' : ''} found</div>
+          <div className="results-list">
+            {results.map((report, idx) => (
+              <div key={idx} className="result-card">
+                <div>
+                  <div className="result-id">{report.report_id}</div>
+                  <div className="result-name">{report.report_name}</div>
+                  <div className="result-meta">
+                    <span className="meta-badge">{report.functional_area}</span>
+                    <span className="meta-badge source">{report.data_source}</span>
+                    <span className="meta-badge">{report.frequency}</span>
+                    <span className="meta-badge">{report.state}</span>
+                  </div>
+                </div>
+                <ArrowRight size={18} className="result-arrow" />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {showAddModal && (
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Add Missing Report</h2>
-              <button onClick={() => setShowAddForm(false)}><X size={20} /></button>
+              <h3>Add New Report</h3>
+              <button className="modal-close" onClick={() => setShowAddModal(false)}>
+                <X size={20} />
+              </button>
             </div>
             <form onSubmit={handleAddReport}>
-              <div className="form-group">
-                <label>Report ID</label>
-                <input value={newReport.report_id} onChange={(e) => setNewReport({...newReport, report_id: e.target.value})} required />
+              <div className="modal-body">
+                {addError && <div className="error-banner"><span className="error-icon">!</span>{addError}</div>}
+                {addSuccess && <div className="success-banner">{addSuccess}</div>}
+                <div className="form-row">
+                  <label>Report ID (optional)</label>
+                  <input type="text" value={newReport.report_id}
+                    onChange={(e) => setNewReport({ ...newReport, report_id: e.target.value })}
+                    placeholder="Auto-generated if empty" />
+                </div>
+                <div className="form-row">
+                  <label>Report Name *</label>
+                  <input type="text" value={newReport.report_name}
+                    onChange={(e) => setNewReport({ ...newReport, report_name: e.target.value })}
+                    placeholder="Enter report name" required />
+                </div>
+                <div className="form-row">
+                  <label>Functional Area</label>
+                  <input type="text" value={newReport.functional_area}
+                    onChange={(e) => setNewReport({ ...newReport, functional_area: e.target.value })}
+                    placeholder="e.g. PROVIDER" />
+                </div>
+                <div className="form-row">
+                  <label>Package Name</label>
+                  <input type="text" value={newReport.package_name}
+                    onChange={(e) => setNewReport({ ...newReport, package_name: e.target.value })}
+                    placeholder="e.g. MMIS Reports" />
+                </div>
+                <div className="form-row">
+                  <label>Frequency</label>
+                  <select value={newReport.frequency}
+                    onChange={(e) => setNewReport({ ...newReport, frequency: e.target.value })}>
+                    <option>Daily</option>
+                    <option>Weekly</option>
+                    <option>Monthly</option>
+                    <option>Quarterly</option>
+                    <option>Yearly</option>
+                  </select>
+                </div>
+                <div className="form-row">
+                  <label>State</label>
+                  <select value={newReport.state}
+                    onChange={(e) => setNewReport({ ...newReport, state: e.target.value })}>
+                    <option value="NH">New Hampshire</option>
+                    <option value="AK">Alaska</option>
+                    <option value="ND">North Dakota</option>
+                  </select>
+                </div>
+                <div className="form-row">
+                  <label>Data Source</label>
+                  <input type="text" value={newReport.data_source}
+                    onChange={(e) => setNewReport({ ...newReport, data_source: e.target.value })}
+                    placeholder="e.g. MMIS" />
+                </div>
               </div>
-              <div className="form-group">
-                <label>Report Name</label>
-                <input value={newReport.report_name} onChange={(e) => setNewReport({...newReport, report_name: e.target.value})} required />
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Add Report</button>
               </div>
-              <div className="form-group">
-                <label>Module</label>
-                <input value={newReport.functional_area} onChange={(e) => setNewReport({...newReport, functional_area: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label>Package</label>
-                <input value={newReport.package_name} onChange={(e) => setNewReport({...newReport, package_name: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label>Frequency</label>
-                <input value={newReport.frequency} onChange={(e) => setNewReport({...newReport, frequency: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label>State</label>
-                <select value={newReport.state} onChange={(e) => setNewReport({...newReport, state: e.target.value})}>
-                  <option value="AK">AK</option>
-                  <option value="NH">NH</option>
-                  <option value="ND">ND</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Data Source</label>
-                <select value={newReport.data_source} onChange={(e) => setNewReport({...newReport, data_source: e.target.value})}>
-                  <option value="MMIS">MMIS</option>
-                  <option value="ORR">ORR</option>
-                </select>
-              </div>
-              <button type="submit">Add Report</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showContactForm && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2>Contact Cognos Dev Team</h2>
-              <button onClick={() => setShowContactForm(false)}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleContactDev}>
-              <div className="form-group">
-                <label>Message</label>
-                <textarea
-                  value={contactMessage}
-                  onChange={(e) => setContactMessage(e.target.value)}
-                  placeholder="Describe the report you need help with..."
-                  rows={5}
-                  required
-                />
-              </div>
-              <button type="submit">Send Message</button>
             </form>
           </div>
         </div>

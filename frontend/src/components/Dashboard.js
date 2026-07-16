@@ -1,165 +1,197 @@
-import React, { useState, useEffect } from "react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
-} from "recharts";
-import dashboardService from "../services/dashboardService";
-import "./Dashboard.css";
-
-const COLORS = ["#1e3a8a", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe", "#dbeafe"];
+import React, { useState, useEffect } from 'react';
+import { useAppState } from '../App';
+import { FileText, Layers, Package, Database, Clock, TrendingUp, Activity, BarChart3 } from 'lucide-react';
+import dashboardService from '../services/dashboardService';
+import './Dashboard.css';
 
 const Dashboard = () => {
-  const [kpiData, setKpiData] = useState({});
-  const [moduleData, setModuleData] = useState([]);
-  const [frequencyData, setFrequencyData] = useState([]);
-  const [packageData, setPackageData] = useState([]);
-  const [dataSourceData, setDataSourceData] = useState([]);
-  const [activeState, setActiveState] = useState("all");
+  const { selectedState } = useAppState();
+  const [kpis, setKpis] = useState({ total_reports: 0, total_modules: 0, total_packages: 0, data_sources: 0 });
+  const [modules, setModules] = useState([]);
+  const [frequency, setFrequency] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [datasource, setDatasource] = useState([]);
+  const [recentReports, setRecentReports] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const kpi = await dashboardService.getKPIs(activeState);
-        setKpiData(kpi);
+  useEffect(() => { fetchDashboardData(); }, [selectedState]);
 
-        const modules = await dashboardService.getModuleDistribution(activeState);
-        setModuleData(modules);
-
-        const freq = await dashboardService.getFrequencyDistribution(activeState);
-        setFrequencyData(freq);
-
-        const pkg = await dashboardService.getPackageDistribution(activeState);
-        setPackageData(pkg);
-
-        const ds = await dashboardService.getDataSourceDistribution(activeState);
-        setDataSourceData(ds);
-      } catch (err) {
-        console.error("Dashboard fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [activeState]);
-
-  const handleStateClick = (state) => {
-    setActiveState(state);
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      const [kpiData, moduleData, freqData, pkgData, dsData, recentData] = await Promise.all([
+        dashboardService.getKPIs(selectedState),
+        dashboardService.getModules(selectedState),
+        dashboardService.getFrequency(selectedState),
+        dashboardService.getPackages(selectedState),
+        dashboardService.getDataSource(selectedState),
+        dashboardService.getRecentReports(selectedState, 8)
+      ]);
+      setKpis(kpiData);
+      setModules(moduleData);
+      setFrequency(freqData);
+      setPackages(pkgData);
+      setDatasource(dsData);
+      setRecentReports(recentData);
+    } catch (err) {
+      console.error('Dashboard error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) return <div className="dashboard-loading">Loading dashboard...</div>;
+  const kpiCards = [
+    { label: 'Total Reports', value: kpis.total_reports, icon: FileText, color: 'accent' },
+    { label: 'Modules', value: kpis.total_modules, icon: Layers, color: 'primary' },
+    { label: 'Packages', value: kpis.total_packages, icon: Package, color: 'warning' },
+    { label: 'Data Sources', value: kpis.data_sources, icon: Database, color: 'danger' }
+  ];
+
+  const getStateLabel = () => {
+    if (selectedState === 'all') return 'All States';
+    if (selectedState === 'AK') return 'Alaska';
+    if (selectedState === 'NH') return 'New Hampshire';
+    if (selectedState === 'ND') return 'North Dakota';
+    return selectedState;
+  };
 
   return (
-    <div className="dashboard-container">
-      <h1 className="dashboard-title">Reports AI Dashboard</h1>
-
-      <div className="state-tabs">
-        {["all", "AK", "NH", "ND"].map((state) => (
-          <button
-            key={state}
-            className={`state-tab ${activeState === state ? "active" : ""}`}
-            onClick={() => handleStateClick(state)}
-          >
-            {state === "all" ? "All States" : state}
-          </button>
-        ))}
-      </div>
-
-      <div className="kpi-cards">
-        <div className="kpi-card">
-          <h3>Total Reports</h3>
-          <p className="kpi-value">{kpiData.total_reports || 0}</p>
+    <div className="dashboard-page">
+      <div className="dashboard-header">
+        <div>
+          <h1>Dashboard</h1>
+          <p>Overview of reports for <span className="state-highlight">{getStateLabel()}</span></p>
         </div>
-        <div className="kpi-card">
-          <h3>Total Modules</h3>
-          <p className="kpi-value">{kpiData.total_modules || 0}</p>
-        </div>
-        <div className="kpi-card">
-          <h3>Total Packages</h3>
-          <p className="kpi-value">{kpiData.total_packages || 0}</p>
-        </div>
-        <div className="kpi-card">
-          <h3>Data Sources</h3>
-          <p className="kpi-value">{kpiData.data_sources || 0}</p>
+        <div className="last-updated">
+          <Clock size={14} />
+          <span>Updated just now</span>
         </div>
       </div>
 
-      <div className="charts-grid">
-        <div className="chart-card">
-          <h3>Module Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={moduleData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="value" fill="#1e3a8a" />
-            </BarChart>
-          </ResponsiveContainer>
+      {loading ? (
+        <div className="dashboard-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading dashboard...</p>
         </div>
+      ) : (
+        <>
+          <div className="kpi-grid">
+            {kpiCards.map((kpi, idx) => {
+              const Icon = kpi.icon;
+              return (
+                <div key={idx} className={`kpi-card ${kpi.color}`}>
+                  <div className="kpi-icon"><Icon size={24} /></div>
+                  <div className="kpi-info">
+                    <span className="kpi-value">{kpi.value}</span>
+                    <span className="kpi-label">{kpi.label}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-        <div className="chart-card">
-          <h3>Frequency Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={frequencyData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {frequencyData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          <div className="dashboard-grid">
+            <div className="dashboard-card">
+              <div className="card-header">
+                <BarChart3 size={18} />
+                <h3>Modules Distribution</h3>
+              </div>
+              <div className="chart-list">
+                {modules.map((item, idx) => (
+                  <div key={idx} className="chart-item">
+                    <div className="chart-label">
+                      <span>{item.name}</span>
+                      <span className="chart-value">{item.value}</span>
+                    </div>
+                    <div className="chart-bar-bg">
+                      <div className="chart-bar" style={{ width: `${Math.min((item.value / (kpis.total_reports || 1)) * 100, 100)}%` }}></div>
+                    </div>
+                  </div>
                 ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+              </div>
+            </div>
 
-        <div className="chart-card">
-          <h3>Package Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={packageData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="name" type="category" width={150} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="value" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-card">
-          <h3>Data Source (MMIS vs ORR)</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={dataSourceData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {dataSourceData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            <div className="dashboard-card">
+              <div className="card-header">
+                <Activity size={18} />
+                <h3>Report Frequency</h3>
+              </div>
+              <div className="chart-list">
+                {frequency.map((item, idx) => (
+                  <div key={idx} className="chart-item">
+                    <div className="chart-label">
+                      <span>{item.name}</span>
+                      <span className="chart-value">{item.value}</span>
+                    </div>
+                    <div className="chart-bar-bg">
+                      <div className="chart-bar accent" style={{ width: `${Math.min((item.value / (kpis.total_reports || 1)) * 100, 100)}%` }}></div>
+                    </div>
+                  </div>
                 ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+              </div>
+            </div>
+
+            <div className="dashboard-card">
+              <div className="card-header">
+                <Package size={18} />
+                <h3>Packages</h3>
+              </div>
+              <div className="package-list">
+                {packages.map((item, idx) => (
+                  <div key={idx} className="package-item">
+                    <div className="package-dot"></div>
+                    <span className="package-name">{item.name}</span>
+                    <span className="package-count">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="dashboard-card">
+              <div className="card-header">
+                <Database size={18} />
+                <h3>Data Sources</h3>
+              </div>
+              <div className="datasource-list">
+                {datasource.map((item, idx) => (
+                  <div key={idx} className="datasource-item">
+                    <div className="datasource-icon"><Database size={16} /></div>
+                    <div className="datasource-info">
+                      <span className="datasource-name">{item.name}</span>
+                      <span className="datasource-count">{item.value} reports</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-card recent-reports">
+            <div className="card-header">
+              <TrendingUp size={18} />
+              <h3>Recent Reports</h3>
+            </div>
+            <div className="reports-table">
+              <div className="table-header">
+                <span>Report ID</span>
+                <span>Name</span>
+                <span>Module</span>
+                <span>Package</span>
+                <span>State</span>
+              </div>
+              {recentReports.map((report, idx) => (
+                <div key={idx} className="table-row">
+                  <span className="report-id">{report.report_id}</span>
+                  <span className="report-name">{report.report_name}</span>
+                  <span className="report-module">{report.functional_area}</span>
+                  <span className="report-package">{report.package_name}</span>
+                  <span className="report-state">{report.state}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

@@ -1,79 +1,37 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Eye, EyeOff, Infinity, ArrowLeft, CheckCircle } from 'lucide-react';
 import authService from '../services/authService';
 import './SignUp.css';
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    confirmPassword: ''
-    // role defaults to 'user' on backend
-  });
+  const [formData, setFormData] = useState({ username: '', password: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
-  };
-
-  const validateForm = () => {
-    if (!formData.username.trim()) {
-      return 'Username is required';
-    }
-    if (formData.username.length < 3) {
-      return 'Username must be at least 3 characters';
-    }
-    if (!formData.password) {
-      return 'Password is required';
-    }
-    if (formData.password.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
-    if (formData.password !== formData.confirmPassword) {
-      return 'Passwords do not match';
-    }
-    return null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setLoading(true);
     setError('');
-
+    if (!formData.username || !formData.password) { setError('All fields are required'); return; }
+    if (formData.username.length < 3) { setError('Username must be at least 3 characters'); return; }
+    if (formData.password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (formData.password !== formData.confirmPassword) { setError('Passwords do not match'); return; }
+    setLoading(true);
     try {
-      const result = await authService.signUp({
-        username: formData.username,
-        password: formData.password
-        // role omitted — backend defaults to 'user'
-      });
-
-      if (result.status === 'success') {
-        setSuccess(true);
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
-      } else {
-        setError(result.message || 'Sign up failed');
-      }
+      await authService.signUp({ username: formData.username, password: formData.password });
+      setSuccess(true);
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(err.message || 'An error occurred during sign up');
+      setError(err.response?.data?.detail || 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -81,112 +39,96 @@ const SignUp = () => {
 
   if (success) {
     return (
-      <div className="signup-container">
-        <div className="signup-box success">
-          <div className="success-icon">✅</div>
+      <div className="signup-page">
+        <div className="signup-bg">
+          <div className="gradient-orb orb-1"></div>
+          <div className="gradient-orb orb-2"></div>
+          <div className="grid-pattern"></div>
+        </div>
+        <div className="signup-success">
+          <CheckCircle size={64} className="success-icon" />
           <h2>Account Created!</h2>
-          <p>Your account has been created successfully.</p>
-          <p>Redirecting to login page...</p>
+          <p>Your account has been successfully created.</p>
+          <p className="redirect-text">Redirecting to login...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="signup-container">
-      <div className="signup-box">
-        <button 
-          className="back-button"
-          onClick={() => navigate('/login')}
-        >
-          <ArrowLeft size={18} />
-          Back to Login
-        </button>
-
-        <div className="signup-header">
-          <UserPlus size={40} className="signup-icon" />
-          <h2>Create Account</h2>
-          <p>Sign up to access Reports AI</p>
+    <div className="signup-page">
+      <div className="signup-bg">
+        <div className="gradient-orb orb-1"></div>
+        <div className="gradient-orb orb-2"></div>
+        <div className="grid-pattern"></div>
+      </div>
+      <div className="signup-container">
+        <div className="signup-branding">
+          <div className="brand-header">
+            <div className="logo-container">
+              <Infinity size={28} className="logo-icon" />
+              <span className="logo-text">Infinite</span>
+            </div>
+          </div>
+          <div className="brand-content">
+            <h1>Join the Platform</h1>
+            <p className="brand-subtitle">
+              Create your account to access the Infinite Report Intelligence Platform
+              and explore Medicaid reporting analytics.
+            </p>
+          </div>
         </div>
-
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="signup-form">
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Choose a username"
-              disabled={loading}
-              autoComplete="username"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <div className="password-input-wrapper">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Create a password (min 6 chars)"
-                disabled={loading}
-                autoComplete="new-password"
-              />
-              <button
-                type="button"
-                className="toggle-password"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <div className="password-input-wrapper">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm your password"
-                disabled={loading}
-                autoComplete="new-password"
-              />
-              <button
-                type="button"
-                className="toggle-password"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <button 
-            type="submit" 
-            className="signup-button"
-            disabled={loading}
-          >
-            {loading ? 'Creating Account...' : 'Create Account'}
+        <div className="signup-form-panel">
+          <button className="back-btn" onClick={() => navigate('/login')}>
+            <ArrowLeft size={18} />Back to Login
           </button>
-        </form>
-
-        <div className="signup-footer">
-          <p>Already have an account? <span onClick={() => navigate('/login')}>Sign In</span></p>
+          <div className="form-header">
+            <h2>Create Account</h2>
+            <p>Fill in your details to get started</p>
+          </div>
+          {error && (
+            <div className="error-banner">
+              <span className="error-icon">!</span>{error}
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="signup-form">
+            <div className="input-group">
+              <label>Username</label>
+              <div className="input-wrapper">
+                <input type="text" name="username" value={formData.username} onChange={handleChange}
+                  placeholder="Choose a username" disabled={loading} autoComplete="username" />
+              </div>
+            </div>
+            <div className="input-group">
+              <label>Password</label>
+              <div className="password-wrapper">
+                <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password}
+                  onChange={handleChange} placeholder="Create a password" disabled={loading} autoComplete="new-password" />
+                <button type="button" className="toggle-password" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+            <div className="input-group">
+              <label>Confirm Password</label>
+              <div className="password-wrapper">
+                <input type={showConfirm ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword}
+                  onChange={handleChange} placeholder="Confirm your password" disabled={loading} autoComplete="new-password" />
+                <button type="button" className="toggle-password" onClick={() => setShowConfirm(!showConfirm)}>
+                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+            <button type="submit" className="signup-btn" disabled={loading}>
+              {loading ? (
+                <span className="btn-loading"><span className="spinner"></span>Creating Account...</span>
+              ) : (<><UserPlus size={18} />Create Account</>)}
+            </button>
+          </form>
+          <div className="form-footer">
+            <p>Already have an account?</p>
+            <button className="login-link-btn" onClick={() => navigate('/login')}>Sign In</button>
+          </div>
         </div>
       </div>
     </div>

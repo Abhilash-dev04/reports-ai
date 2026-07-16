@@ -1,42 +1,30 @@
-import axios from "axios";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+import axios from 'axios';
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 const dashboardService = {
-  getKPIs: async (state = "all") => {
-    const response = await axios.get(`${API_URL}/api/dashboard/kpis`, {
-      params: { state }
-    });
+  getKPIs: async (state = 'all') => {
+    const response = await axios.get(`${API_URL}/api/dashboard/kpis?state=${state}`);
     return response.data;
   },
-
-  getModuleDistribution: async (state = "all") => {
-    const response = await axios.get(`${API_URL}/api/dashboard/modules`, {
-      params: { state }
-    });
+  getModules: async (state = 'all') => {
+    const response = await axios.get(`${API_URL}/api/dashboard/modules?state=${state}`);
     return response.data;
   },
-
-  getFrequencyDistribution: async (state = "all") => {
-    const response = await axios.get(`${API_URL}/api/dashboard/frequency`, {
-      params: { state }
-    });
+  getFrequency: async (state = 'all') => {
+    const response = await axios.get(`${API_URL}/api/dashboard/frequency?state=${state}`);
     return response.data;
   },
-
-  getPackageDistribution: async (state = "all") => {
-    const response = await axios.get(`${API_URL}/api/dashboard/packages`, {
-      params: { state }
-    });
+  getPackages: async (state = 'all') => {
+    const response = await axios.get(`${API_URL}/api/dashboard/packages?state=${state}`);
     return response.data;
   },
-
-  getDataSourceDistribution: async (state = "all") => {
-    const response = await axios.get(`${API_URL}/api/dashboard/datasource`, {
-      params: { state }
-    });
+  getDataSource: async (state = 'all') => {
+    const response = await axios.get(`${API_URL}/api/dashboard/datasource?state=${state}`);
+    return response.data;
+  },
+  getRecentReports: async (state = 'all', limit = 8) => {
+    const response = await axios.get(`${API_URL}/api/search?q=&state=${state}&limit=${limit}`);
     return response.data;
   }
 };
-
 export default dashboardService;
