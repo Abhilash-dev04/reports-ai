@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
-
+from backend.embedding.model import encode_text
 from backend.database.connection import init_db
 
 @asynccontextmanager
@@ -140,26 +140,81 @@ async def get_datasource(state: str = Query("all")):
         return [{"name": "MMIS", "value": 48}]
 
 @app.get("/api/search")
-async def search_reports(q: str = Query(""), type: str = Query("traditional"), state: str = Query("all"), limit: int = Query(20)):
+async def search_reports(
+    q: str = Query(""),
+    state: str = Query("all"),
+    limit: int = Query(20),
+    threshold: float = Query(0.80)
+):
     try:
+
         from backend.database.connection import get_db
         import psycopg
+
+        if not q.strip():
+            return []
+
+        query_embedding = encode_text(q)
+
+        emb_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+
         db = get_db()
-        cursor = db.cursor(row_factory=psycopg.rows.dict_row)
-        where_clauses = []
-        params = []
-        if q and q.strip():
-            where_clauses.append("(report_name ILIKE %s OR report_id ILIKE %s OR functional_area ILIKE %s)")
-            search_pattern = f"%{q}%"
-            params.extend([search_pattern, search_pattern, search_pattern])
+
+        cursor = db.cursor(
+            row_factory=psycopg.rows.dict_row
+        )
+
+        sql = """
+        SELECT *,
+               1 - (embedding <=> %s::vector) AS similarity
+        FROM reports
+        WHERE embedding IS NOT NULL
+        """
+
+        params = [emb_str]
+
         if state != "all":
-            where_clauses.append("state = %s")
+            sql += " AND state = %s"
             params.append(state)
-        where_str = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
-        cursor.execute(f"SELECT * FROM reports {where_str} ORDER BY updated_at DESC NULLS LAST LIMIT %s", params + [limit])
-        result = cursor.fetchall()
-        cursor.close(); db.close()
-        return result
+
+        sql += """
+        ORDER BY embedding <=> %s::vector
+        LIMIT %s
+        """
+
+        params.append(emb_str)
+        params.append(limit * 5)
+
+        cursor.execute(sql, params)
+
+        rows = cursor.fetchall()
+
+        cursor.close()
+        db.close()
+
+        results = []
+
+        for row in rows:
+
+            similarity = max(
+                0.0,
+                min(
+                    1.0,
+                    float(row["similarity"])
+                )
+            )
+
+            if similarity >= threshold:
+
+                row["score"] = round(
+                    similarity * 100,
+                    2
+                )
+
+                results.append(row)
+
+        return results[:limit]
+
     except Exception as e:
         print(f"Search error: {e}")
         return []
