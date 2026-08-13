@@ -1,0 +1,21 @@
+# Full-stack deployment configuration for the backend-backed application.
+# Do not enable frontend-only Demo Mode in production render deployments.
+services:
+  - type: web
+    name: ai-report-metadata-explorer
+    runtime: python
+    buildCommand: pip install -r requirements.txt && cd frontend && npm ci && npm run build && cd ..
+    startCommand: python backend/main.py
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_ADMIN
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: MODEL_PATH
+        value: ./models/all-MiniLM-L6-v2.onnx
+      - key: EXCEL_SOURCE_PATH
+        value: ./data/sample_reports.xlsx

@@ -1,0 +1,113 @@
+It should launch after installing dependencies and configuring PostgreSQL/model files, but I have not validated a full live backend startup yet.
+
+What has been verified
+React production build: compiled successfully
+Python source: passed syntax compilation
+Synthetic Excel workbook: valid, 16 columns and 12 records
+xlsx frontend dependency: removed
+Public ZIP structure: validated
+Branding/secret scans: passed
+What is required before launch
+1. Install Python dependencies
+cd "D:\ext\Reports AI\reports-ai-showcase\reports-ai-showcase"
+
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+
+The backend import test in the isolated build environment stopped because psycopg was not installed there. psycopg[binary] is correctly listed in requirements.txt, so installing requirements should resolve that dependency.1.zip
+
+2. Create .env
+Copy-Item .env.example .env
+notepad .env
+
+
+Configure at minimum:
+
+DATABASE_URL=postgresql://...
+DATABASE_URL_ADMIN=postgresql://...
+JWT_SECRET=your-long-random-secret
+FRONTEND_URL=http://localhost:3000
+MODEL_PATH=./models/all-MiniLM-L6-v2.onnx
+EXCEL_SOURCE_PATH=./data/sample_reports.xlsx
+
+3. Provide the embedding model
+
+The ZIP intentionally excludes the large ONNX model and tokenizer for public-repository safety and size.
+
+You need:
+
+models/
+├── all-MiniLM-L6-v2.onnx
+└── vocab.txt
+
+
+Without those files:
+
+Traditional Search can use PostgreSQL data
+Natural Language semantic search will fail when embedding generation is required
+Uploading the workbook will fail while generating embeddings
+4. Configure PostgreSQL with pgvector
+
+The configured database user must be able to create or access:
+
+users
+reports
+report_requests
+contact_requests
+
+
+The database must support:
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
+5. Initialize and upload synthetic data
+python -c "from backend.database.connection import init_db; init_db()"
+
+
+Then:
+
+python scripts\upload_sample_reports.py `
+  --file "data\sample_reports.xlsx"
+
+6. Build the frontend
+cd frontend
+npm ci
+npm run build
+cd ..
+
+
+The frontend build was already successfully tested while preparing the bundle.
+
+7. Start the application
+python backend\main.py
+
+
+Then open:
+
+http://localhost:8000
+
+
+Health endpoint:
+
+http://localhost:8000/api/health
+
+
+API documentation:
+
+http://localhost:8000/docs
+
+Honest launch status
+Frontend compilation        Passed
+Python syntax               Passed
+Workbook validation         Passed
+Dependency/secret scans     Passed
+Live PostgreSQL startup     Not tested
+ONNX inference              Not tested—model excluded
+End-to-end search           Not tested against a live database
+
+
+So the accurate answer is: the public project is buildable, but it is not a zero-configuration standalone demo. PostgreSQL, pgvector, environment variables, and the ONNX model must be configured before the complete application launches.

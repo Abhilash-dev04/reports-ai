@@ -1,0 +1,70 @@
+.reviewer-page{padding:84px 32px 32px;margin-left:var(--sidebar-width,240px);min-height:100vh}.reviewer-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.reviewer-header h1{color:var(--text-primary)}.reviewer-header p{color:var(--text-secondary)}.reviewer-header button,.reviewer-filters button,.review-actions button{display:flex;align-items:center;gap:7px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);padding:9px 12px;border-radius:9px;cursor:pointer}.reviewer-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.reviewer-filters button.active{color:var(--text-primary);border-color:var(--accent)}.reviewer-layout{display:grid;grid-template-columns:minmax(300px,.8fr) minmax(500px,1.5fr);gap:16px}.review-list,.review-detail{background:var(--bg-card);border:1px solid var(--border);border-radius:15px;padding:14px;min-height:560px}.review-list{display:flex;flex-direction:column;gap:8px}.review-list>button{text-align:left;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:10px;padding:13px;color:var(--text-secondary);cursor:pointer}.review-list>button.selected,.review-list>button:hover{border-color:var(--accent)}.review-list strong,.review-list span,.review-list small{display:block}.review-list strong{color:var(--text-primary)}.review-list span{color:var(--accent);font-size:11px;margin-top:5px}.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px}.review-grid>div{display:flex;flex-direction:column}.review-grid label,.block-label{font-size:10px;text-transform:uppercase;color:var(--text-muted)}.review-grid span{color:var(--text-primary);font-size:13px}.review-detail pre{white-space:pre-wrap;background:rgba(0,0,0,.25);color:var(--text-primary);padding:13px;border-radius:9px}.block-label{display:block;margin-top:18px}.review-detail textarea{width:100%;margin-top:7px;background:#ffffff;color:var(--text-primary);border:1px solid var(--border);border-radius:9px;padding:11px}.review-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:16px}.review-actions .approve{color:var(--accent);border-color:rgba(0,212,170,.35)}.review-actions .reject{color:#ef4444;border-color:rgba(239,68,68,.35)}.review-error,.review-success{padding:11px;border-radius:9px;margin-bottom:12px}.review-error{color:#ef4444;background:rgba(239,68,68,.1)}.review-success{color:var(--accent);background:rgba(0,212,170,.1)}.review-empty{display:flex;align-items:center;justify-content:center;gap:8px;min-height:240px;color:var(--text-muted)}@media(max-width:1000px){.reviewer-page{margin-left:0;padding:80px 18px}.reviewer-layout{grid-template-columns:1fr}.review-list,.review-detail{min-height:300px}}@media(max-width:650px){.review-grid{grid-template-columns:1fr}}
+
+.sync-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sync-badge.synced {
+  color: var(--accent);
+  background: rgba(0, 212, 170, 0.1);
+  border-color: rgba(0, 212, 170, 0.3);
+}
+
+.sync-badge.not-synced {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.sync-error-panel {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  color: #fb7185;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+}
+
+.sync-error-panel p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.review-actions .retry-sync {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.sync-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 18px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.sync-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
