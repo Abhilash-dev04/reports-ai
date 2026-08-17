@@ -99,15 +99,3 @@ http://localhost:8000/api/health
 API documentation:
 
 http://localhost:8000/docs
-
-Honest launch status
-Frontend compilation        Passed
-Python syntax               Passed
-Workbook validation         Passed
-Dependency/secret scans     Passed
-Live PostgreSQL startup     Not tested
-ONNX inference              Not tested—model excluded
-End-to-end search           Not tested against a live database
-
-
-So the accurate answer is: the public project is buildable, but it is not a zero-configuration standalone demo. PostgreSQL, pgvector, environment variables, and the ONNX model must be configured before the complete application launches.
